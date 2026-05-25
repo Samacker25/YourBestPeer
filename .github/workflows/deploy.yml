@@ -1,0 +1,261 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "What to deploy"
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - frontend-only
+          - backend-only
+
+# Only one deploy at a time
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+# ══════════════════════════════════════════════════════════════
+# STAGE 1 — BUILD & PUSH Docker images → GitHub Container Registry
+# All 9 services built in parallel, tagged with git SHA + latest
+# ══════════════════════════════════════════════════════════════
+jobs:
+  build-images:
+    name: "Build › ${{ matrix.service.name }}"
+    runs-on: ubuntu-latest
+    if: github.event.inputs.target != 'frontend-only'
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        service:
+          - { name: auth-service,            port: 8001 }
+          - { name: ai-agent-service,        port: 8002 }
+          - { name: productivity-service,    port: 8003 }
+          - { name: finance-service,         port: 8004 }
+          - { name: habit-service,           port: 8005 }
+          - { name: analytics-service,       port: 8006 }
+          - { name: recommendation-service,  port: 8007 }
+          - { name: notification-service,    port: 8008 }
+          - { name: rag-service,             port: 8009 }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/${{ matrix.service.name }}
+          tags: |
+            type=sha,prefix=sha-
+            type=raw,value=latest
+
+      - name: Build and push ${{ matrix.service.name }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services/${{ matrix.service.name }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+# ══════════════════════════════════════════════════════════════
+# STAGE 2 — DEPLOY FRONTEND → Vercel
+# ══════════════════════════════════════════════════════════════
+  deploy-frontend:
+    name: "Deploy › Frontend (Vercel)"
+    runs-on: ubuntu-latest
+    if: github.event.inputs.target != 'backend-only'
+    environment:
+      name: production
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build web app
+        run: pnpm --filter web build
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+
+      - name: Deploy to Vercel
+        id: deploy
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: apps/web
+          vercel-args: "--prod"
+
+      - name: Comment deployment URL on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `✅ Frontend deployed: ${{ steps.deploy.outputs.url }}`
+            })
+
+# ══════════════════════════════════════════════════════════════
+# STAGE 3 — DEPLOY BACKEND SERVICES → Railway
+# Deploys one service at a time in dependency order:
+#   auth → ai-agent → [productivity, finance, habit, analytics,
+#                       recommendation, notification] → rag
+# ══════════════════════════════════════════════════════════════
+
+  deploy-auth:
+    name: "Deploy › auth-service"
+    runs-on: ubuntu-latest
+    needs: build-images
+    if: github.event.inputs.target != 'frontend-only'
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy auth-service
+        run: |
+          railway up \
+            --service auth-service \
+            --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        working-directory: services/auth-service
+
+      - name: Wait for auth-service to be healthy
+        run: |
+          echo "Waiting for auth-service to boot..."
+          for i in $(seq 1 20); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ secrets.AUTH_SERVICE_URL }}/health")
+            [ "$STATUS" = "200" ] && echo "auth-service is healthy" && exit 0
+            echo "Attempt $i: status $STATUS"
+            sleep 10
+          done
+          echo "auth-service did not become healthy" && exit 1
+
+  deploy-ai-agent:
+    name: "Deploy › ai-agent-service"
+    runs-on: ubuntu-latest
+    needs: deploy-auth
+    if: github.event.inputs.target != 'frontend-only'
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy ai-agent-service
+        run: railway up --service ai-agent-service --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        working-directory: services/ai-agent-service
+
+  deploy-core-services:
+    name: "Deploy › ${{ matrix.service }}"
+    runs-on: ubuntu-latest
+    needs: deploy-ai-agent
+    if: github.event.inputs.target != 'frontend-only'
+    environment: production
+    strategy:
+      max-parallel: 3
+      matrix:
+        service:
+          - productivity-service
+          - finance-service
+          - habit-service
+          - analytics-service
+          - recommendation-service
+          - notification-service
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy ${{ matrix.service }}
+        run: railway up --service ${{ matrix.service }} --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        working-directory: services/${{ matrix.service }}
+
+  deploy-rag:
+    name: "Deploy › rag-service"
+    runs-on: ubuntu-latest
+    needs: deploy-core-services
+    if: github.event.inputs.target != 'frontend-only'
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy rag-service
+        run: railway up --service rag-service --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        working-directory: services/rag-service
+
+# ══════════════════════════════════════════════════════════════
+# STAGE 4 — SMOKE TEST production endpoints
+# ══════════════════════════════════════════════════════════════
+
+  smoke-test:
+    name: "Smoke Test › Production"
+    runs-on: ubuntu-latest
+    needs: [deploy-frontend, deploy-rag]
+    if: always() && github.event.inputs.target == 'all' || github.event.inputs.target == ''
+    steps:
+      - name: Smoke test — frontend
+        run: curl --fail "${{ secrets.NEXT_PUBLIC_APP_URL }}"
+
+      - name: Smoke test — auth-service /health
+        run: curl --fail "${{ secrets.AUTH_SERVICE_URL }}/health"
+
+      - name: Smoke test — ai-agent-service /health
+        run: curl --fail "${{ secrets.AI_AGENT_SERVICE_URL }}/health"
+
+      - name: Smoke test — rag-service /health
+        run: curl --fail "${{ secrets.RAG_SERVICE_URL }}/health"
+
+      - name: Notify success
+        run: |
+          echo "✅ All production smoke tests passed."
+          echo "Frontend: ${{ secrets.NEXT_PUBLIC_APP_URL }}"
+          echo "Auth:     ${{ secrets.AUTH_SERVICE_URL }}"

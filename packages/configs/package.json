@@ -1,0 +1,19 @@
+{
+  "name": "@yourbestpeer/configs",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    "./eslint/next": "./eslint/next.js",
+    "./eslint/react": "./eslint/react.js",
+    "./tsconfig/base.json": "./tsconfig/base.json",
+    "./tsconfig/nextjs.json": "./tsconfig/nextjs.json",
+    "./tailwind": "./tailwind/index.js"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "15.0.0"
+  }
+}

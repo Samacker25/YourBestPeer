@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 222 20% 6%;
+    --foreground: 210 40% 96%;
+    --card: 222 20% 9%;
+    --card-foreground: 210 40% 96%;
+    --primary: 258 68% 62%;
+    --primary-foreground: 0 0% 98%;
+    --muted: 222 18% 13%;
+    --muted-foreground: 215 16% 50%;
+    --border: 222 18% 16%;
+    --radius: 0.75rem;
+  }
+
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground antialiased; }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: hsl(222 18% 22%); border-radius: 999px; }
+}

@@ -1,0 +1,263 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+const SERVICES = [
+  { name: "auth-service",           port: 8001, category: "Core",      desc: "JWT auth, Google OAuth, payments" },
+  { name: "ai-agent-service",       port: 8002, category: "AI",        desc: "LangGraph multi-agent, streaming chat" },
+  { name: "productivity-service",   port: 8003, category: "Domain",    desc: "Tasks, projects, notes, Pomodoro" },
+  { name: "finance-service",        port: 8004, category: "Domain",    desc: "Expenses, budgets, receipt scanner" },
+  { name: "habit-service",          port: 8005, category: "Domain",    desc: "Habits, streaks, XP, mood logging" },
+  { name: "analytics-service",      port: 8006, category: "Analytics", desc: "Metrics aggregation, trend analysis" },
+  { name: "recommendation-service", port: 8007, category: "AI",        desc: "ML wellness score, anomaly detection" },
+  { name: "notification-service",   port: 8008, category: "Core",      desc: "Email, push, Telegram" },
+  { name: "rag-service",            port: 8009, category: "AI",        desc: "Document upload, vector search" },
+  { name: "career-service",         port: 8010, category: "Domain",    desc: "Resume analyser, interview prep" },
+  { name: "integrations-service",   port: 8011, category: "Core",      desc: "Google Calendar, Gmail OAuth" },
+  { name: "automation-service",     port: 8012, category: "Core",      desc: "Workflow rules engine, triggers" },
+];
+
+const CATEGORY_STYLE: Record<string, { dot: string; badge: string; icon: string }> = {
+  Core:      { dot: "bg-blue-400",    badge: "bg-blue-500/15 text-blue-400",    icon: "text-blue-400 bg-blue-500/10" },
+  AI:        { dot: "bg-violet-400",  badge: "bg-violet-500/15 text-violet-400", icon: "text-violet-400 bg-violet-500/10" },
+  Domain:    { dot: "bg-emerald-400", badge: "bg-emerald-500/15 text-emerald-400", icon: "text-emerald-400 bg-emerald-500/10" },
+  Analytics: { dot: "bg-amber-400",   badge: "bg-amber-500/15 text-amber-400",  icon: "text-amber-400 bg-amber-500/10" },
+};
+
+function CategoryIcon({ category, className = "" }: { category: string; className?: string }) {
+  if (category === "AI") return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+    </svg>
+  );
+  if (category === "Analytics") return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+    </svg>
+  );
+  if (category === "Domain") return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+    </svg>
+  );
+  // Core
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 14.25h13.5m-13.5 0a3 3 0 01-3-3m3 3a3 3 0 100 6h13.5a3 3 0 100-6m-16.5-3a3 3 0 013-3h13.5a3 3 0 013 3m-19.5 0a4.5 4.5 0 01.9-2.7L5.737 5.1a3.375 3.375 0 012.7-1.35h7.126c1.062 0 2.062.5 2.7 1.35l2.587 3.45a4.5 4.5 0 01.9 2.7m0 0a3 3 0 01-3 3m0 3h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008zm-3 6h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008z" />
+    </svg>
+  );
+}
+
+type Status = "healthy" | "unhealthy" | "loading";
+
+interface SvcState {
+  name: string; port: number; category: string; desc: string;
+  status: Status; latency?: number;
+}
+
+async function ping(port: number): Promise<{ ok: boolean; latency: number }> {
+  const t = Date.now();
+  try {
+    const r = await fetch(`http://localhost:${port}/health`, { signal: AbortSignal.timeout(3000) });
+    return { ok: r.ok, latency: Date.now() - t };
+  } catch {
+    return { ok: false, latency: Date.now() - t };
+  }
+}
+
+function RingChart({ pct, healthy, total }: { pct: number; healthy: number; total: number }) {
+  const r = 36;
+  const circ = 2 * Math.PI * r;
+  const dash = (pct / 100) * circ;
+  const color = pct === 100 ? "#34d399" : pct >= 75 ? "#fbbf24" : "#f87171";
+  return (
+    <div className="relative flex items-center justify-center">
+      <svg width={96} height={96} className="-rotate-90">
+        <circle cx={48} cy={48} r={r} fill="none" stroke="hsl(222 18% 16%)" strokeWidth={8} />
+        <circle cx={48} cy={48} r={r} fill="none" stroke={color} strokeWidth={8}
+          strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
+          style={{ transition: "stroke-dasharray 0.6s ease" }} />
+      </svg>
+      <div className="absolute text-center">
+        <p className="text-xl font-bold text-foreground leading-none">{pct}%</p>
+        <p className="text-[10px] text-muted-foreground mt-0.5">{healthy}/{total}</p>
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ label, value, sub, icon }: {
+  label: string; value: string | number; sub?: string; icon: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border border-border bg-card p-5">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{label}</p>
+        <div className="h-8 w-8 rounded-lg bg-muted/50 flex items-center justify-center text-muted-foreground">
+          {icon}
+        </div>
+      </div>
+      <p className="text-3xl font-bold text-foreground">{value}</p>
+      {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
+    </div>
+  );
+}
+
+export default function OverviewPage() {
+  const [svcs, setSvcs] = useState<SvcState[]>(SERVICES.map((s) => ({ ...s, status: "loading" })));
+  const [lastChecked, setLastChecked] = useState<Date | null>(null);
+  const [checking, setChecking] = useState(false);
+
+  async function checkAll() {
+    setChecking(true);
+    setSvcs((p) => p.map((s) => ({ ...s, status: "loading" })));
+    const results = await Promise.all(
+      SERVICES.map(async (s) => {
+        const { ok, latency } = await ping(s.port);
+        return { ...s, status: (ok ? "healthy" : "unhealthy") as Status, latency };
+      })
+    );
+    setSvcs(results);
+    setLastChecked(new Date());
+    setChecking(false);
+  }
+
+  useEffect(() => {
+    checkAll();
+    const id = setInterval(checkAll, 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const healthy = svcs.filter((s) => s.status === "healthy").length;
+  const unhealthy = svcs.filter((s) => s.status === "unhealthy").length;
+  const isLoading = svcs.some((s) => s.status === "loading");
+  const upPct = isLoading ? 0 : Math.round((healthy / SERVICES.length) * 100);
+  const avgLatency = svcs
+    .filter((s) => s.status === "healthy" && s.latency)
+    .reduce((sum, s, _, arr) => sum + (s.latency ?? 0) / arr.length, 0);
+  const grouped = svcs.reduce<Record<string, SvcState[]>>((acc, s) => {
+    (acc[s.category] ??= []).push(s);
+    return acc;
+  }, {});
+
+  return (
+    <div className="p-6 space-y-6 max-w-6xl">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-foreground">Platform Overview</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {isLoading ? "Checking services…" : lastChecked ? `Updated ${lastChecked.toLocaleTimeString()}` : "—"}
+          </p>
+        </div>
+        <button
+          onClick={checkAll} disabled={checking}
+          className="flex items-center gap-2 rounded-xl bg-primary/10 border border-primary/20 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/20 transition disabled:opacity-50"
+        >
+          <svg className={`h-4 w-4 ${checking ? "animate-spin" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+          </svg>
+          {checking ? "Checking…" : "Refresh"}
+        </button>
+      </div>
+
+      {/* Stats + ring */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <StatCard label="Total Services" value={SERVICES.length} icon={
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 17.25v-.228a4.5 4.5 0 00-.12-1.03l-2.268-9.64a3.375 3.375 0 00-3.285-2.602H7.923a3.375 3.375 0 00-3.285 2.602l-2.268 9.64a4.5 4.5 0 00-.12 1.03v.228m19.5 0a3 3 0 01-3 3H5.25a3 3 0 01-3-3m19.5 0a3 3 0 00-3-3H5.25a3 3 0 00-3 3m16.5 0h.008v.008h-.008v-.008zm-3 0h.008v.008h-.008v-.008z" />
+          </svg>
+        } />
+        <StatCard label="Healthy" value={isLoading ? "…" : healthy} icon={
+          <svg className="h-4 w-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        } />
+        <StatCard label="Down" value={isLoading ? "…" : unhealthy} icon={
+          <svg className="h-4 w-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        } />
+        <StatCard label="Avg Latency" value={isLoading ? "…" : `${Math.round(avgLatency)}ms`} sub="healthy services" icon={
+          <svg className="h-4 w-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+          </svg>
+        } />
+
+        {/* Uptime ring */}
+        <div className="rounded-2xl border border-border bg-card p-4 flex flex-col items-center justify-center gap-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Uptime</p>
+          <RingChart pct={isLoading ? 0 : upPct} healthy={healthy} total={SERVICES.length} />
+        </div>
+      </div>
+
+      {/* Services by category */}
+      <div className="space-y-5">
+        {Object.entries(grouped).map(([cat, list]) => {
+          const catStyle = CATEGORY_STYLE[cat] ?? { dot: "bg-gray-400", badge: "bg-gray-500/15 text-gray-400", icon: "text-gray-400 bg-gray-500/10" };
+          const catHealthy = list.filter((s) => s.status === "healthy").length;
+          return (
+            <div key={cat}>
+              <div className="flex items-center gap-3 mb-3">
+                <span className={`h-2 w-2 rounded-full ${catStyle.dot}`} />
+                <h2 className="text-sm font-semibold text-foreground">{cat}</h2>
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${catStyle.badge}`}>
+                  {catHealthy}/{list.length} up
+                </span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                {list.map((svc) => (
+                  <div key={svc.name} className={`group rounded-2xl border bg-card p-4 transition-all hover:shadow-lg hover:shadow-black/20 ${
+                    svc.status === "unhealthy" ? "border-red-500/40 bg-red-500/5" : "border-border hover:border-border/80"
+                  }`}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-3 min-w-0">
+                        {/* Category icon in small colored container */}
+                        <div className={`h-8 w-8 shrink-0 rounded-lg flex items-center justify-center ${catStyle.icon}`}>
+                          <CategoryIcon category={cat} className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-foreground truncate">{svc.name}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5 truncate">{svc.desc}</p>
+                        </div>
+                      </div>
+                      {/* Status pill */}
+                      <div className="shrink-0">
+                        {svc.status === "loading" ? (
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <span className="h-1.5 w-1.5 rounded-full bg-yellow-400 animate-pulse" />
+                            checking
+                          </span>
+                        ) : svc.status === "healthy" ? (
+                          <span className="flex items-center gap-1 text-xs text-emerald-400 font-medium">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                            {svc.latency}ms
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-xs text-red-400 font-medium">
+                            <span className="h-1.5 w-1.5 rounded-full bg-red-400 animate-pulse" />
+                            down
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
+                      <span className="font-mono text-[10px] text-muted-foreground">:{svc.port}</span>
+                      <a href={`http://localhost:${svc.port}/docs`} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition">
+                        API Docs
+                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                        </svg>
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
