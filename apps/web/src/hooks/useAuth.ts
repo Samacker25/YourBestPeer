@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { authApi } from "@/lib/api";
+import { authApi, ApiError } from "@/lib/api";
 
 export interface AuthUser {
   id: string;
@@ -20,16 +20,20 @@ export function useAuth(requireAuth = true) {
     const token = localStorage.getItem("access_token");
     if (!token) {
       setLoading(false);
-      if (requireAuth) router.replace("/");
+      if (requireAuth) router.replace("/login");
       return;
     }
     authApi
       .me()
       .then((u) => setUser(u as AuthUser))
-      .catch(() => {
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("refresh_token");
-        if (requireAuth) router.replace("/");
+      .catch((err) => {
+        if (err instanceof ApiError) {
+          // Real auth failure (401) — token is invalid or expired
+          localStorage.removeItem("access_token");
+          localStorage.removeItem("refresh_token");
+          if (requireAuth) router.replace("/login");
+        }
+        // Network error (service unreachable) — keep tokens, user is still logged in
       })
       .finally(() => setLoading(false));
   }, [requireAuth, router]);

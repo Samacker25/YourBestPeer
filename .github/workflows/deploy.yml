@@ -126,7 +126,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `✅ Frontend deployed: ${{ steps.deploy.outputs.url }}`
+              body: ` Frontend deployed: ${{ steps.deploy.outputs.url }}`
             })
 
 # ══════════════════════════════════════════════════════════════
@@ -256,6 +256,6 @@ jobs:
 
       - name: Notify success
         run: |
-          echo "✅ All production smoke tests passed."
+          echo " All production smoke tests passed."
           echo "Frontend: ${{ secrets.NEXT_PUBLIC_APP_URL }}"
           echo "Auth:     ${{ secrets.AUTH_SERVICE_URL }}"

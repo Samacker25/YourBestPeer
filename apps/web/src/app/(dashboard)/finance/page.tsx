@@ -55,6 +55,8 @@ export default function FinancePage() {
       setExpenses(exps);
       setSummary(sum);
       setBudgets(bud);
+    } catch {
+      // finance-service offline — show empty state
     } finally {
       setLoading(false);
     }

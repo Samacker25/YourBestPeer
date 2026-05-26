@@ -21,6 +21,7 @@ export default function TasksPage() {
   const { toast } = useToast();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [serviceDown, setServiceDown] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [creating, setCreating] = useState(false);
   const [search, setSearch] = useState("");
@@ -32,8 +33,11 @@ export default function TasksPage() {
 
   async function load() {
     setLoading(true);
+    setServiceDown(false);
     try {
       setTasks(await tasksApi.list());
+    } catch {
+      setServiceDown(true);
     } finally {
       setLoading(false);
     }
@@ -50,21 +54,31 @@ export default function TasksPage() {
       setTasks((prev) => [t, ...prev]);
       setNewTitle("");
       toast("Task created");
+    } catch {
+      toast("Could not create task — service unavailable", "error");
     } finally {
       setCreating(false);
     }
   }
 
   async function moveTask(id: string, newStatus: Task["status"]) {
-    const updated = await tasksApi.update(id, { status: newStatus });
-    setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
-    toast(`Moved to ${newStatus.replace("_", " ")}`, "info");
+    try {
+      const updated = await tasksApi.update(id, { status: newStatus });
+      setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
+      toast(`Moved to ${newStatus.replace("_", " ")}`, "info");
+    } catch {
+      toast("Could not update task", "error");
+    }
   }
 
   async function deleteTask(id: string) {
-    await tasksApi.delete(id);
-    setTasks((prev) => prev.filter((t) => t.id !== id));
-    toast("Task deleted", "error");
+    try {
+      await tasksApi.delete(id);
+      setTasks((prev) => prev.filter((t) => t.id !== id));
+      toast("Task deleted", "error");
+    } catch {
+      toast("Could not delete task", "error");
+    }
   }
 
   async function fetchSchedule() {
@@ -126,6 +140,15 @@ export default function TasksPage() {
           {loadingSuggestions ? "Scheduling…" : "Smart Schedule"}
         </button>
       </div>
+
+      {serviceDown && (
+        <div className="flex items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-400">
+          <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+          </svg>
+          Productivity service is offline — start it on port 8003 to manage tasks.
+        </div>
+      )}
 
       {/* Search + Priority filter */}
       <div className="flex items-center gap-3">

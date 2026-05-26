@@ -69,7 +69,7 @@ services:
     ports:
       - "8001:8001"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET:-dev_secret_change_me}
       JWT_ALGORITHM: HS256
@@ -89,7 +89,7 @@ services:
     ports:
       - "8002:8002"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
       REDIS_URL: redis://redis:6379
       PINECONE_API_KEY: ${PINECONE_API_KEY:-}
       PINECONE_ENVIRONMENT: ${PINECONE_ENVIRONMENT:-us-east-1-aws}
@@ -117,7 +117,7 @@ services:
     ports:
       - "8003:8003"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
       REDIS_URL: redis://redis:6379
     depends_on:
       postgres:
@@ -131,7 +131,7 @@ services:
     ports:
       - "8004:8004"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
       REDIS_URL: redis://redis:6379
     depends_on:
       postgres:
@@ -145,7 +145,7 @@ services:
     ports:
       - "8005:8005"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
       REDIS_URL: redis://redis:6379
     depends_on:
       postgres:
@@ -159,7 +159,7 @@ services:
     ports:
       - "8006:8006"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
       REDIS_URL: redis://redis:6379
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
     depends_on:
@@ -174,7 +174,7 @@ services:
     ports:
       - "8007:8007"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
       REDIS_URL: redis://redis:6379
     depends_on:
       postgres:
@@ -188,7 +188,7 @@ services:
     ports:
       - "8008:8008"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
       REDIS_URL: redis://redis:6379
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
@@ -209,7 +209,7 @@ services:
     ports:
       - "8009:8009"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
       PINECONE_API_KEY: ${PINECONE_API_KEY:-}
       PINECONE_ENVIRONMENT: ${PINECONE_ENVIRONMENT:-us-east-1-aws}
       PINECONE_INDEX_NAME: ${PINECONE_INDEX_NAME:-lifeos}
@@ -225,7 +225,7 @@ services:
     ports:
       - "8010:8010"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
       JWT_SECRET: ${JWT_SECRET:-dev_secret_change_me}
       JWT_ALGORITHM: HS256
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
@@ -241,7 +241,7 @@ services:
     ports:
       - "8011:8011"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
       JWT_SECRET: ${JWT_SECRET:-dev_secret_change_me}
       JWT_ALGORITHM: HS256
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
@@ -260,7 +260,7 @@ services:
     ports:
       - "8012:8012"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET:-dev_secret_change_me}
       JWT_ALGORITHM: HS256

@@ -72,17 +72,12 @@ function StatCard({ label, value, sub, icon }: {
 }
 
 async function checkService(port: number): Promise<{ ok: boolean; latency: number; hasSwagger: boolean }> {
-  const start = Date.now();
   try {
-    const [healthRes, docsRes] = await Promise.allSettled([
-      fetch(`http://localhost:${port}/health`, { signal: AbortSignal.timeout(3000) }),
-      fetch(`http://localhost:${port}/docs`,   { signal: AbortSignal.timeout(2000) }),
-    ]);
-    const ok = healthRes.status === "fulfilled" && healthRes.value.ok;
-    const hasSwagger = docsRes.status === "fulfilled" && docsRes.value.ok;
-    return { ok, latency: Date.now() - start, hasSwagger };
+    const res = await fetch(`/api/health?port=${port}`, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return { ok: false, latency: 0, hasSwagger: false };
+    return res.json();
   } catch {
-    return { ok: false, latency: Date.now() - start, hasSwagger: false };
+    return { ok: false, latency: 0, hasSwagger: false };
   }
 }
 

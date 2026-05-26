@@ -238,13 +238,15 @@ export default function HabitsPage() {
     setLoading(true);
     try {
       const [h, xp, mood] = await Promise.all([
-        habitsApi.list(),
+        habitsApi.list().catch(() => [] as typeof habits),
         habitsApi.xpStats().catch(() => null),
         moodApi.today().catch(() => null),
       ]);
       setHabits(h);
       setXpStats(xp);
       setTodayMood(mood);
+    } catch {
+      // habit-service offline — leave empty state
     } finally {
       setLoading(false);
     }
