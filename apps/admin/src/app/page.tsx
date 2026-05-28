@@ -56,12 +56,13 @@ interface SvcState {
 }
 
 async function ping(port: number): Promise<{ ok: boolean; latency: number }> {
-  const t = Date.now();
   try {
-    const r = await fetch(`http://localhost:${port}/health`, { signal: AbortSignal.timeout(3000) });
-    return { ok: r.ok, latency: Date.now() - t };
+    const r = await fetch(`/api/health?port=${port}`, { signal: AbortSignal.timeout(5000) });
+    if (!r.ok) return { ok: false, latency: 0 };
+    const data = await r.json();
+    return { ok: data.ok, latency: data.latency };
   } catch {
-    return { ok: false, latency: Date.now() - t };
+    return { ok: false, latency: 0 };
   }
 }
 

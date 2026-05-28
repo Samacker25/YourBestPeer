@@ -67,9 +67,7 @@ export default function UsersPage() {
   const [planFilter, setPlanFilter] = useState<"all" | "free" | "pro">("all");
 
   useEffect(() => {
-    fetch("http://localhost:8001/users/admin/list", {
-      headers: { "X-Admin-Key": process.env.NEXT_PUBLIC_ADMIN_KEY ?? "admin" },
-    })
+    fetch("/api/users")
       .then((r) => {
         if (!r.ok) throw new Error(`${r.status}`);
         return r.json();

@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     google_redirect_uri: str = "http://localhost:3001/auth/google/callback"
 
     cors_origins: list[str] = ["http://localhost:3001"]
+    admin_key: str = "admin_dev_key"
 
     razorpay_key_id: str = ""
     razorpay_key_secret: str = ""
