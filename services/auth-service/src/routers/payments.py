@@ -106,8 +106,9 @@ async def verify_payment(
     if not hmac.compare_digest(expected, body.razorpay_signature):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid payment signature")
 
+    expires_at = datetime.now(timezone.utc) + timedelta(days=30)
     current_user.plan = "pro"
-    current_user.plan_expires_at = datetime.now(timezone.utc) + timedelta(days=30)
+    current_user.plan_expires_at = expires_at
     await db.flush()
 
-    return {"plan": "pro", "expires_at": current_user.plan_expires_at.isoformat(), "message": "Upgrade successful! Welcome to Pro."}
+    return {"plan": "pro", "expires_at": expires_at.isoformat(), "message": "Upgrade successful! Welcome to Pro."}

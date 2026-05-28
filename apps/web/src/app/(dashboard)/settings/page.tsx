@@ -130,12 +130,16 @@ export default function SettingsPage() {
         document.body.appendChild(script);
       });
 
+      const logoSvg = `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M 64 7 C 80 7 90 19 90 37 C 90 53 83 64 76 70 L 72 79 C 68 85 60 89 52 87 C 44 85 38 78 37 70 C 36 63 38 57 37 51 C 36 46 34 42 36 37 C 37 33 36 29 34 25 C 33 21 35 15 40 11 C 45 7 54 6 64 7 Z" stroke="#7c3aed" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="round" fill="none"/><polygon points="63,15 80,23 87,37 80,51 63,59 46,51 39,37 46,23" stroke="#7c3aed" stroke-width="1.6" stroke-linejoin="round" fill="none"/><line x1="63" y1="37" x2="63" y2="15" stroke="#7c3aed" stroke-width="1.2" stroke-linecap="round" opacity="0.7"/><line x1="63" y1="37" x2="80" y2="23" stroke="#7c3aed" stroke-width="1.2" stroke-linecap="round" opacity="0.7"/><line x1="63" y1="37" x2="87" y2="37" stroke="#7c3aed" stroke-width="1.2" stroke-linecap="round" opacity="0.7"/><line x1="63" y1="37" x2="80" y2="51" stroke="#7c3aed" stroke-width="1.2" stroke-linecap="round" opacity="0.7"/><line x1="63" y1="37" x2="63" y2="59" stroke="#7c3aed" stroke-width="1.2" stroke-linecap="round" opacity="0.7"/><line x1="63" y1="37" x2="46" y2="51" stroke="#7c3aed" stroke-width="1.2" stroke-linecap="round" opacity="0.7"/><line x1="63" y1="37" x2="39" y2="37" stroke="#7c3aed" stroke-width="1.2" stroke-linecap="round" opacity="0.7"/><line x1="63" y1="37" x2="46" y2="23" stroke="#7c3aed" stroke-width="1.2" stroke-linecap="round" opacity="0.7"/><circle cx="63" cy="15" r="2.4" fill="#7c3aed"/><circle cx="80" cy="23" r="2.4" fill="#7c3aed"/><circle cx="87" cy="37" r="2.4" fill="#7c3aed"/><circle cx="80" cy="51" r="2.4" fill="#7c3aed"/><circle cx="63" cy="59" r="2.4" fill="#7c3aed"/><circle cx="46" cy="51" r="2.4" fill="#7c3aed"/><circle cx="39" cy="37" r="2.4" fill="#7c3aed"/><circle cx="46" cy="23" r="2.4" fill="#7c3aed"/><circle cx="63" cy="37" r="2.8" fill="#7c3aed"/></svg>`;
+      const logoDataUrl = `data:image/svg+xml;base64,${btoa(logoSvg)}`;
+
       const rzp = new window.Razorpay({
         key: order.key_id,
         amount: order.amount,
         currency: order.currency,
         name: "YourBestPeer",
         description: "Pro Plan — 1 Month",
+        image: logoDataUrl,
         order_id: order.order_id,
         prefill: { name: profile?.name, email: profile?.email },
         theme: { color: "#7c3aed" },

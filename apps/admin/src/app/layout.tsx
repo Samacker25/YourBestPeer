@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { LogoIcon } from "@/components/Logo";
 
 export const metadata: Metadata = {
   title: "YourBestPeer Admin",
@@ -63,11 +64,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {/* Logo */}
           <div className="px-4 py-5 border-b border-border">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 shrink-0 shadow-lg shadow-violet-500/25">
-                <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-                </svg>
-              </div>
+              <LogoIcon className="h-9 w-9 shrink-0" />
               <div>
                 <p className="text-sm font-bold text-foreground leading-none">YourBestPeer</p>
                 <span className="text-[10px] font-semibold text-amber-400 bg-amber-500/15 px-1.5 py-0.5 rounded-full mt-0.5 inline-block">
