@@ -88,6 +88,7 @@ async def create_task(
     task = Task(user_id=user_id, **body.model_dump())
     db.add(task)
     await db.flush()
+    await db.refresh(task)
     return TaskResponse.model_validate(task)
 
 

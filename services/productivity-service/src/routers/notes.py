@@ -113,6 +113,7 @@ async def scan_image_to_note(
     )
     db.add(note)
     await db.flush()
+    await db.refresh(note)
     return NoteResponse.model_validate(note)
 
 
@@ -136,6 +137,7 @@ async def create_note(
     note = Note(user_id=user_id, **body.model_dump())
     db.add(note)
     await db.flush()
+    await db.refresh(note)
     return NoteResponse.model_validate(note)
 
 
@@ -170,6 +172,7 @@ async def update_note(
     for field, value in body.model_dump(exclude_none=True).items():
         setattr(note, field, value)
     await db.flush()
+    await db.refresh(note)
     return NoteResponse.model_validate(note)
 
 

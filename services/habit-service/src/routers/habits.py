@@ -122,6 +122,7 @@ async def create_habit(
     habit = Habit(user_id=user_id, **body.model_dump())
     db.add(habit)
     await db.flush()
+    await db.refresh(habit)
     r = HabitResponse.model_validate(habit)
     return r
 
@@ -160,6 +161,7 @@ async def update_habit(
     for field, value in body.model_dump(exclude_none=True).items():
         setattr(habit, field, value)
     await db.flush()
+    await db.refresh(habit)
     r = HabitResponse.model_validate(habit)
     r.streak = await _calculate_streak(habit_id, db)
     return r

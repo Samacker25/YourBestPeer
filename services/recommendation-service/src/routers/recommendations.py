@@ -118,9 +118,10 @@ async def generate_recommendations(
                 habits = r.json()
                 pending = [h for h in habits if not h["completed_today"]]
                 top_streaks = sorted(habits, key=lambda h: h["streak"], reverse=True)[:3]
+                streaks_str = ", ".join(f"{h['name']} ({h['streak']}d)" for h in top_streaks)
                 data_parts.append(
                     f"Habits: {len(habits)} total, {len(pending)} not done today. "
-                    f"Top streaks: {', '.join(f'{h[\"name\"]} ({h[\"streak\"]}d)' for h in top_streaks)}"
+                    f"Top streaks: {streaks_str}"
                 )
         except Exception:
             pass

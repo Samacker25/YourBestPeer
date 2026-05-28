@@ -19,10 +19,10 @@ export default function NotesPage() {
   const scanInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    notesApi.list().then((data) => {
-      setNotes(data);
-      if (data.length > 0) open(data[0]);
-    }).finally(() => setLoading(false));
+    notesApi.list()
+      .then((data) => { setNotes(data); if (data.length > 0) open(data[0]); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   function open(note: Note) {
@@ -60,18 +60,24 @@ export default function NotesPage() {
         setActiveId(created.id);
       }
       setDirty(false);
+    } catch {
+      toast("Could not save note — productivity service unavailable", "error");
     } finally {
       setSaving(false);
     }
   }
 
   async function deleteNote(id: string) {
-    await notesApi.delete(id);
-    const remaining = notes.filter((n) => n.id !== id);
-    setNotes(remaining);
-    if (activeId === id) {
-      if (remaining.length > 0) open(remaining[0]);
-      else newNote();
+    try {
+      await notesApi.delete(id);
+      const remaining = notes.filter((n) => n.id !== id);
+      setNotes(remaining);
+      if (activeId === id) {
+        if (remaining.length > 0) open(remaining[0]);
+        else newNote();
+      }
+    } catch {
+      toast("Could not delete note — service unavailable", "error");
     }
   }
 
@@ -142,10 +148,13 @@ export default function NotesPage() {
             <p className="py-8 text-center text-xs text-muted-foreground">No notes yet. Create one!</p>
           ) : (
             notes.map((note) => (
-              <button
+              <div
                 key={note.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => open(note)}
-                className={`group w-full rounded-xl px-3 py-2.5 text-left transition ${
+                onKeyDown={(e) => e.key === "Enter" && open(note)}
+                className={`group w-full cursor-pointer rounded-xl px-3 py-2.5 text-left transition ${
                   activeId === note.id ? "bg-primary/12 border border-primary/20" : "hover:bg-muted/60 border border-transparent"
                 }`}
               >
@@ -168,7 +177,7 @@ export default function NotesPage() {
                     </svg>
                   </button>
                 </div>
-              </button>
+              </div>
             ))
           )}
         </div>

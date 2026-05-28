@@ -329,6 +329,7 @@ async def update_expense(
     for field, value in body.model_dump(exclude_none=True).items():
         setattr(expense, field, value)
     await db.flush()
+    await db.refresh(expense)
     return ExpenseResponse.model_validate(expense)
 
 
