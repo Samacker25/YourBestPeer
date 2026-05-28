@@ -254,6 +254,7 @@ async def update_task(
     for field, value in body.model_dump(exclude_none=True).items():
         setattr(task, field, value)
     await db.flush()
+    await db.refresh(task)
 
     if not was_done and task.status == TaskStatus.done:
         await _notify(

@@ -69,15 +69,15 @@ class ResumeImprovement(BaseModel):
 class ResumeAnalysis(BaseModel):
     summary: str
     experience_level: str
-    years_experience: int
+    years_experience: float
     top_skills: list[str]
     skill_gaps: list[str]
     strengths: list[ResumeStrength]
     improvements: list[ResumeImprovement]
-    ats_score: int
+    ats_score: float
     ats_tips: list[str]
     suggested_roles: list[str]
-    overall_rating: int
+    overall_rating: float
 
 class InterviewQuestion(BaseModel):
     category: str

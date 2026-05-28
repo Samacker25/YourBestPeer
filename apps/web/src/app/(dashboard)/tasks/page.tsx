@@ -36,8 +36,12 @@ export default function TasksPage() {
     setServiceDown(false);
     try {
       setTasks(await tasksApi.list());
-    } catch {
-      setServiceDown(true);
+    } catch (err) {
+      // Only show offline banner for genuine network errors, not auth failures (401/403)
+      const status = (err as { status?: number })?.status;
+      if (!status || status >= 500 || status === 0) {
+        setServiceDown(true);
+      }
     } finally {
       setLoading(false);
     }

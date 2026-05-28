@@ -10,7 +10,7 @@ from src.config import settings
 
 _CHUNK_SIZE = 500
 _CHUNK_OVERLAP = 50
-_EMBED_MODEL = "all-MiniLM-L6-v2"
+_EMBED_MODEL = "BAAI/bge-large-en-v1.5"
 _TOP_K = 5
 
 

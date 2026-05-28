@@ -61,7 +61,8 @@ async def _process_document(doc_id: str, user_id: str, file_path: Path, content_
             doc.status = DocumentStatus.processing
             await db.flush()
 
-            text = await asyncio.get_event_loop().run_in_executor(
+            loop = asyncio.get_running_loop()
+            text = await loop.run_in_executor(
                 None, extract_text, file_path, content_type
             )
 
@@ -70,13 +71,15 @@ async def _process_document(doc_id: str, user_id: str, file_path: Path, content_
                 await db.commit()
                 return
 
-            chunk_count = await asyncio.get_event_loop().run_in_executor(
+            chunk_count = await loop.run_in_executor(
                 None, upsert_document, doc_id, user_id, text
             )
 
             doc.chunk_count = chunk_count
             doc.status = DocumentStatus.ready
-        except Exception:
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).error("Document processing failed: %s", exc, exc_info=True)
             doc.status = DocumentStatus.failed
 
         await db.commit()
