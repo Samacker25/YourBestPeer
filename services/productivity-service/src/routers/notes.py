@@ -83,20 +83,17 @@ async def scan_image_to_note(
             detail="Image too large (max 5 MB)",
         )
 
-    import google.generativeai as genai
-    genai.configure(api_key=settings.google_api_key)
-    model = genai.GenerativeModel("gemini-2.5-flash")
-
-    image_part = {
-        "inline_data": {
-            "mime_type": content_type,
-            "data": base64.b64encode(raw_bytes).decode(),
-        }
-    }
+    from langchain_google_genai import ChatGoogleGenerativeAI
+    from langchain_core.messages import HumanMessage
+    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=settings.google_api_key, temperature=0.1)
+    b64 = base64.b64encode(raw_bytes).decode()
 
     try:
-        response = model.generate_content([_SCAN_PROMPT, image_part])
-        raw = response.text.strip()
+        response = await llm.ainvoke([HumanMessage(content=[
+            {"type": "text", "text": _SCAN_PROMPT},
+            {"type": "image_url", "image_url": {"url": f"data:{content_type};base64,{b64}"}},
+        ])])
+        raw = response.content.strip()
         if raw.startswith("```"):
             raw = raw.split("```")[1]
             if raw.startswith("json"):

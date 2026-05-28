@@ -174,16 +174,16 @@ async def schedule_tasks(
         return _fallback_schedule(tasks_data)
 
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=settings.google_api_key)
-        model = genai.GenerativeModel("gemini-2.5-flash")
+        from langchain_google_genai import ChatGoogleGenerativeAI
+        from langchain_core.messages import HumanMessage
+        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=settings.google_api_key, temperature=0.3)
         prompt = _SCHEDULE_PROMPT.format(
             today=date.today().isoformat(),
             tasks_json=json.dumps(tasks_data, indent=2),
             events_json=json.dumps(calendar_events[:20], indent=2),
         )
-        response = model.generate_content(prompt)
-        raw = response.text.strip()
+        response = await llm.ainvoke([HumanMessage(content=prompt)])
+        raw = response.content.strip()
         if raw.startswith("```"):
             raw = raw.split("```")[1]
             if raw.startswith("json"):

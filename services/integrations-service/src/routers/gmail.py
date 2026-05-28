@@ -115,12 +115,12 @@ async def list_messages(
             for m in messages[:8]
         )
         try:
-            import google.generativeai as genai
-            genai.configure(api_key=settings.google_api_key)
-            model = genai.GenerativeModel("gemini-2.5-flash")
+            from langchain_google_genai import ChatGoogleGenerativeAI
+            from langchain_core.messages import HumanMessage
+            llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=settings.google_api_key, temperature=0.3)
             prompt = _SUMMARIZE_PROMPT.format(emails=email_text)
-            response = model.generate_content(prompt)
-            raw = response.text.strip()
+            resp = await llm.ainvoke([HumanMessage(content=prompt)])
+            raw = resp.content.strip()
             if raw.startswith("```"):
                 raw = raw.split("```")[1]
                 if raw.startswith("json"):

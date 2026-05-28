@@ -119,23 +119,20 @@ async def scan_receipt(
             detail="Image too large (max 5 MB)",
         )
 
-    import google.generativeai as genai
-    genai.configure(api_key=settings.google_api_key)
-    model = genai.GenerativeModel("gemini-2.5-flash")
+    from langchain_google_genai import ChatGoogleGenerativeAI
+    from langchain_core.messages import HumanMessage
+    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=settings.google_api_key, temperature=0.1)
 
     today = Date.today().isoformat()
     prompt = _SCAN_PROMPT.format(today=today)
-
-    image_part = {
-        "inline_data": {
-            "mime_type": content_type,
-            "data": base64.b64encode(content).decode(),
-        }
-    }
+    b64 = base64.b64encode(content).decode()
 
     try:
-        response = model.generate_content([prompt, image_part])
-        raw = response.text.strip()
+        response = await llm.ainvoke([HumanMessage(content=[
+            {"type": "text", "text": prompt},
+            {"type": "image_url", "image_url": {"url": f"data:{content_type};base64,{b64}"}},
+        ])])
+        raw = response.content.strip()
         # Strip markdown code fences if present
         if raw.startswith("```"):
             raw = raw.split("```")[1]
@@ -198,12 +195,12 @@ async def categorize_expense(
         return {"category": "Other", "confidence": "low"}
 
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=settings.google_api_key)
-        model = genai.GenerativeModel("gemini-2.5-flash")
+        from langchain_google_genai import ChatGoogleGenerativeAI
+        from langchain_core.messages import HumanMessage
+        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=settings.google_api_key, temperature=0)
         prompt = _CATEGORIZE_PROMPT.format(description=description, amount=amount)
-        response = model.generate_content(prompt)
-        category = response.text.strip().split("\n")[0].strip()
+        resp = await llm.ainvoke([HumanMessage(content=prompt)])
+        category = resp.content.strip().split("\n")[0].strip()
         if category not in _CATEGORIES:
             category = "Other"
         return {"category": category, "confidence": "high"}

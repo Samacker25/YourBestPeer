@@ -157,6 +157,8 @@ async def search_documents(
             detail="AI not configured — set GOOGLE_API_KEY",
         )
 
+    from langchain_google_genai import ChatGoogleGenerativeAI
+    from langchain_core.messages import HumanMessage
     from src.utils.vector import search as vector_search
 
     chunks = await asyncio.get_event_loop().run_in_executor(
@@ -167,18 +169,20 @@ async def search_documents(
         return SearchResult(answer="No relevant documents found in your knowledge base.", chunks=[])
 
     context = "\n\n---\n\n".join(c["text"] for c in chunks)
-
-    import google.generativeai as genai
-    genai.configure(api_key=settings.google_api_key)
-    model = genai.GenerativeModel("gemini-2.5-flash")
     prompt = (
         f"Answer the following question based only on the provided context.\n\n"
         f"Context:\n{context}\n\n"
         f"Question: {body.query}\n\n"
         "Answer concisely and accurately. If the context doesn't contain enough information, say so."
     )
-    response = model.generate_content(prompt)
-    answer = response.text if hasattr(response, "text") else str(response)
+
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-2.5-flash",
+        google_api_key=settings.google_api_key,
+        temperature=0.7,
+    )
+    response = await llm.ainvoke([HumanMessage(content=prompt)])
+    answer = response.content
 
     return SearchResult(answer=answer, chunks=chunks)
 

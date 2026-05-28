@@ -5,6 +5,8 @@ pydantic-settings>=2.3.0,<3.0.0
 sqlalchemy==2.0.30
 asyncpg==0.29.0
 alembic==1.13.1
+langchain-google-genai>=1.0.0
+langchain-core>=0.2.0
 google-generativeai>=0.7.0
 python-multipart==0.0.9
 slowapi==0.1.9

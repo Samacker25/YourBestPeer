@@ -140,13 +140,13 @@ async def generate_recommendations(
     user_data = "\n".join(data_parts)
     prompt = _GENERATE_PROMPT.format(user_data=user_data)
 
-    import google.generativeai as genai
-    genai.configure(api_key=settings.google_api_key)
-    model = genai.GenerativeModel("gemini-2.5-flash")
+    from langchain_google_genai import ChatGoogleGenerativeAI
+    from langchain_core.messages import HumanMessage
+    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=settings.google_api_key, temperature=0.7)
 
     try:
-        response = model.generate_content(prompt)
-        raw = response.text.strip()
+        response = await llm.ainvoke([HumanMessage(content=prompt)])
+        raw = response.content.strip()
         if raw.startswith("```"):
             raw = raw.split("```")[1]
             if raw.startswith("json"):

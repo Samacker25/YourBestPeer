@@ -95,10 +95,9 @@ class AnalysisRecord(BaseModel):
     model_config = {"from_attributes": True}
 
 
-def _get_gemini():
-    import google.generativeai as genai
-    genai.configure(api_key=settings.google_api_key)
-    return genai.GenerativeModel("gemini-2.5-flash")
+def _get_llm(temperature: float = 0.3):
+    from langchain_google_genai import ChatGoogleGenerativeAI
+    return ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=settings.google_api_key, temperature=temperature)
 
 
 def _strip_fences(raw: str) -> str:
@@ -130,21 +129,22 @@ async def analyze_resume(
     if len(content) > _MAX_FILE_SIZE:
         raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="File too large (max 5 MB)")
 
-    model = _get_gemini()
+    from langchain_core.messages import HumanMessage
+    llm = _get_llm(temperature=0.3)
 
-    # For PDFs use vision (inline_data); for text extract directly
     if content_type == "application/pdf":
-        parts = [
-            _RESUME_PROMPT,
-            {"inline_data": {"mime_type": "application/pdf", "data": base64.b64encode(content).decode()}},
-        ]
+        b64 = base64.b64encode(content).decode()
+        msg = HumanMessage(content=[
+            {"type": "text", "text": _RESUME_PROMPT},
+            {"type": "image_url", "image_url": {"url": f"data:application/pdf;base64,{b64}"}},
+        ])
     else:
         resume_text = content.decode("utf-8", errors="replace")
-        parts = [f"{_RESUME_PROMPT}\n\nRESUME TEXT:\n{resume_text}"]
+        msg = HumanMessage(content=f"{_RESUME_PROMPT}\n\nRESUME TEXT:\n{resume_text}")
 
     try:
-        response = model.generate_content(parts)
-        data = json.loads(_strip_fences(response.text))
+        response = await llm.ainvoke([msg])
+        data = json.loads(_strip_fences(response.content))
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                             detail=f"Could not analyse resume: {exc}")
@@ -176,10 +176,11 @@ async def interview_prep(
     resume_context = f" based on this candidate's background:\n{resume_text[:2000]}" if resume_text else ""
     prompt = _INTERVIEW_PROMPT.format(role=role, resume_context=resume_context)
 
-    model = _get_gemini()
+    from langchain_core.messages import HumanMessage
+    llm = _get_llm(temperature=0.7)
     try:
-        response = model.generate_content(prompt)
-        data = json.loads(_strip_fences(response.text))
+        response = await llm.ainvoke([HumanMessage(content=prompt)])
+        data = json.loads(_strip_fences(response.content))
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                             detail=f"Could not generate questions: {exc}")
