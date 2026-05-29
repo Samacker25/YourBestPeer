@@ -11,20 +11,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.auth import get_current_user_id
 from src.config import settings
 from src.database import get_db
+from src.events import publish_task_completed
 from src.models.task import Task, TaskPriority, TaskStatus
 
 router = APIRouter()
-
-
-async def _notify(user_id: str, title: str, body: str) -> None:
-    try:
-        async with httpx.AsyncClient(timeout=3.0) as client:
-            await client.post(
-                f"{settings.notification_service_url}/notifications/",
-                json={"user_id": user_id, "title": title, "body": body, "type": "in_app"},
-            )
-    except Exception:
-        pass
 
 
 class TaskCreate(BaseModel):
@@ -257,10 +247,11 @@ async def update_task(
     await db.refresh(task)
 
     if not was_done and task.status == TaskStatus.done:
-        await _notify(
-            str(user_id),
-            f"✅ Task completed: \"{task.title}\"",
-            "Great work! You completed a task.",
+        await publish_task_completed(
+            user_id=str(user_id),
+            task_id=str(task.id),
+            task_title=task.title,
+            priority=task.priority.value if hasattr(task.priority, "value") else task.priority,
         )
 
     return TaskResponse.model_validate(task)

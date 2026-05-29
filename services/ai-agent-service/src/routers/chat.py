@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.auth import get_current_user_id
 from src.config import settings
 from src.database import get_db
+from src.events import publish_chat_completed
 from src.models.conversation import Conversation
 
 _bearer = HTTPBearer(auto_error=False)
@@ -179,6 +180,12 @@ async def chat(
 
     conversation.messages = messages
     await db.flush()
+
+    await publish_chat_completed(
+        user_id=str(user_id),
+        conversation_id=str(conversation.id),
+        reply_preview=reply,
+    )
 
     return ChatResponse(
         conversation_id=conversation.id,

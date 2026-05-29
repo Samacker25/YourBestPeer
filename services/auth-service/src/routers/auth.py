@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config import settings
 from src.database import get_db
+from src.events import publish_user_registered
 from src.models.refresh_token import RefreshToken
 from src.models.user import User
 from src.utils.jwt import create_access_token, create_refresh_token, hash_token
@@ -99,6 +100,7 @@ async def register(
     )
     db.add(user)
     await db.flush()
+    await publish_user_registered(str(user.id), user.email, user.name)
     return await _issue_tokens(user, db)
 
 
@@ -242,6 +244,7 @@ async def google_callback(
         result = await db.execute(select(User).where(User.email == email))
         user = result.scalar_one_or_none()
 
+    is_new_user = user is None
     if user:
         # Link Google ID if not already linked
         if not user.google_id:
@@ -257,5 +260,8 @@ async def google_callback(
         )
         db.add(user)
         await db.flush()
+
+    if is_new_user:
+        await publish_user_registered(str(user.id), user.email, user.name)
 
     return await _issue_tokens(user, db)
