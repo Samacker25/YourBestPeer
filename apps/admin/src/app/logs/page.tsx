@@ -8,23 +8,11 @@ interface LogEntry {
   service: string;
   level: "info" | "warn" | "error";
   message: string;
+  endpoint?: string;
+  latency_ms?: number;
+  status_code?: number;
   user_id?: string;
 }
-
-const MOCK_LOGS: LogEntry[] = [
-  { id: "1",  timestamp: new Date(Date.now() -  60_000).toISOString(), service: "auth-service",           level: "info",  message: "User login successful",                                          user_id: "usr_123" },
-  { id: "2",  timestamp: new Date(Date.now() - 120_000).toISOString(), service: "ai-agent-service",       level: "info",  message: "Chat message processed via Gemini 2.5 Flash (latency: 1240ms)" },
-  { id: "3",  timestamp: new Date(Date.now() - 180_000).toISOString(), service: "finance-service",        level: "info",  message: "Expense created: ₹450 – Food",                                   user_id: "usr_456" },
-  { id: "4",  timestamp: new Date(Date.now() - 240_000).toISOString(), service: "habit-service",          level: "info",  message: "Habit logged, streak extended to 7 days",                        user_id: "usr_123" },
-  { id: "5",  timestamp: new Date(Date.now() - 300_000).toISOString(), service: "rag-service",            level: "warn",  message: "Pinecone index not configured — search skipped" },
-  { id: "6",  timestamp: new Date(Date.now() - 360_000).toISOString(), service: "auth-service",           level: "warn",  message: "Refresh token near expiry for user_id=usr_789" },
-  { id: "7",  timestamp: new Date(Date.now() - 420_000).toISOString(), service: "ai-agent-service",       level: "info",  message: "Multi-agent run completed: tools=[create_task, list_habits] steps=4" },
-  { id: "8",  timestamp: new Date(Date.now() - 480_000).toISOString(), service: "integrations-service",   level: "info",  message: "Google Calendar synced: 8 events fetched" },
-  { id: "9",  timestamp: new Date(Date.now() - 540_000).toISOString(), service: "recommendation-service", level: "info",  message: "Generated 5 AI recommendations (wellness_score=72)" },
-  { id: "10", timestamp: new Date(Date.now() - 600_000).toISOString(), service: "automation-service",     level: "info",  message: "Workflow 'Budget Alert' triggered: send_notification executed" },
-  { id: "11", timestamp: new Date(Date.now() - 700_000).toISOString(), service: "career-service",         level: "info",  message: "Resume analysis completed (score=7.5/10)",                       user_id: "usr_456" },
-  { id: "12", timestamp: new Date(Date.now() - 800_000).toISOString(), service: "notification-service",   level: "error", message: "Email delivery failed: SMTP connection timeout" },
-];
 
 const LEVEL_CONFIG: Record<string, { badge: string; row: string; dot: string }> = {
   info:  { badge: "bg-blue-500/15 text-blue-400",   row: "",                    dot: "bg-blue-400" },
@@ -88,24 +76,55 @@ function StatCard({ label, value, sub, icon }: {
 }
 
 export default function LogsPage() {
-  const [logs, setLogs] = useState<LogEntry[]>(MOCK_LOGS);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
   const [levelFilter, setLevelFilter] = useState<"all" | "info" | "warn" | "error">("all");
   const [serviceFilter, setServiceFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const services = ["all", ...Array.from(new Set(MOCK_LOGS.map((l) => l.service)))];
+  const services = ["all", ...Array.from(new Set(logs.map((l) => l.service)))];
+
+  async function loadLogs() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/logs");
+      if (!res.ok) {
+        throw new Error(`Failed to load logs (${res.status})`);
+      }
+      const data = await res.json();
+      setLogs(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setLogs([]);
+      setError(err instanceof Error ? err.message : "Failed to load logs");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
+    void loadLogs();
     if (!autoRefresh) return;
-    const id = setInterval(() => setLogs([...MOCK_LOGS]), 10_000);
+    const id = setInterval(() => {
+      void loadLogs();
+    }, 10_000);
     return () => clearInterval(id);
   }, [autoRefresh]);
 
   const filtered = logs.filter((l) => {
     if (levelFilter !== "all" && l.level !== levelFilter) return false;
     if (serviceFilter !== "all" && l.service !== serviceFilter) return false;
-    if (search && !l.message.toLowerCase().includes(search.toLowerCase())) return false;
+    if (search) {
+      const haystack = [
+        l.message,
+        l.endpoint ?? "",
+        l.status_code?.toString() ?? "",
+        l.latency_ms?.toString() ?? "",
+      ].join(" ").toLowerCase();
+      if (!haystack.includes(search.toLowerCase())) return false;
+    }
     return true;
   });
 
@@ -229,7 +248,16 @@ export default function LogsPage() {
                   </span>
 
                   {/* Message */}
-                  <span className="text-foreground flex-1 leading-relaxed">{log.message}</span>
+                  <span className="text-foreground flex-1 leading-relaxed">
+                    <span className="block">{log.message}</span>
+                    <span className="mt-1 block text-[10px] text-muted-foreground/70">
+                      {[
+                        log.endpoint ? `endpoint ${log.endpoint}` : null,
+                        typeof log.status_code === "number" ? `status ${log.status_code}` : null,
+                        typeof log.latency_ms === "number" ? `${log.latency_ms}ms` : null,
+                      ].filter(Boolean).join(" • ")}
+                    </span>
+                  </span>
 
                   {/* User ID */}
                   {log.user_id && (
@@ -242,8 +270,20 @@ export default function LogsPage() {
         )}
       </div>
 
+      {error && (
+        <p className="text-xs text-amber-400 text-center">
+          {error}
+        </p>
+      )}
+
+      {loading && filtered.length === 0 && (
+        <p className="text-xs text-muted-foreground text-center">
+          Loading live service activity…
+        </p>
+      )}
+
       <p className="text-xs text-muted-foreground text-center">
-        Showing mock logs — connect to Loki, CloudWatch, or Datadog for production log aggregation.
+        Live service activity includes endpoint checks, response codes, latencies, and auth-service metrics.
       </p>
     </div>
   );

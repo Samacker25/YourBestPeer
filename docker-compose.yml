@@ -71,7 +71,7 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET:-dev_secret_change_me}
+      JWT_SECRET: ${JWT_SECRET:-change_me}
       JWT_ALGORITHM: HS256
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
@@ -91,6 +91,8 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
       REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-change_me}
+      JWT_ALGORITHM: HS256
       PINECONE_API_KEY: ${PINECONE_API_KEY:-}
       PINECONE_ENVIRONMENT: ${PINECONE_ENVIRONMENT:-us-east-1-aws}
       PINECONE_INDEX_NAME: ${PINECONE_INDEX_NAME:-lifeos}
@@ -119,6 +121,9 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
       REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-change_me}
+      JWT_ALGORITHM: HS256
+      NOTIFICATION_SERVICE_URL: http://notification-service:8008
     depends_on:
       postgres:
         condition: service_healthy
@@ -133,6 +138,10 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
       REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-change_me}
+      JWT_ALGORITHM: HS256
+      NOTIFICATION_SERVICE_URL: http://notification-service:8008
+      AUTOMATION_SERVICE_URL: http://automation-service:8012
     depends_on:
       postgres:
         condition: service_healthy
@@ -147,6 +156,9 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
       REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-change_me}
+      JWT_ALGORITHM: HS256
+      NOTIFICATION_SERVICE_URL: http://notification-service:8008
     depends_on:
       postgres:
         condition: service_healthy
@@ -161,6 +173,8 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
       REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-change_me}
+      JWT_ALGORITHM: HS256
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
     depends_on:
       postgres:
@@ -176,6 +190,9 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
       REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-change_me}
+      JWT_ALGORITHM: HS256
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -190,6 +207,8 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
       REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-change_me}
+      JWT_ALGORITHM: HS256
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
@@ -210,6 +229,8 @@ services:
       - "8009:8009"
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
+      JWT_SECRET: ${JWT_SECRET:-change_me}
+      JWT_ALGORITHM: HS256
       PINECONE_API_KEY: ${PINECONE_API_KEY:-}
       PINECONE_ENVIRONMENT: ${PINECONE_ENVIRONMENT:-us-east-1-aws}
       PINECONE_INDEX_NAME: ${PINECONE_INDEX_NAME:-lifeos}
@@ -226,7 +247,7 @@ services:
       - "8010:8010"
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
-      JWT_SECRET: ${JWT_SECRET:-dev_secret_change_me}
+      JWT_SECRET: ${JWT_SECRET:-change_me}
       JWT_ALGORITHM: HS256
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
     depends_on:
@@ -242,7 +263,7 @@ services:
       - "8011:8011"
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
-      JWT_SECRET: ${JWT_SECRET:-dev_secret_change_me}
+      JWT_SECRET: ${JWT_SECRET:-change_me}
       JWT_ALGORITHM: HS256
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
@@ -262,7 +283,7 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-lifeos}:${POSTGRES_PASSWORD:-lifeos_dev}@postgres:5432/${POSTGRES_DB:-lifeos}
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET:-dev_secret_change_me}
+      JWT_SECRET: ${JWT_SECRET:-change_me}
       JWT_ALGORITHM: HS256
       NOTIFICATION_SERVICE_URL: http://notification-service:8008
       PRODUCTIVITY_SERVICE_URL: http://productivity-service:8003

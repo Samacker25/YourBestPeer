@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     environment: str = "development"
     google_api_key: str = ""
     notification_service_url: str = "http://localhost:8008"
+    automation_service_url: str = "http://localhost:8012"
 
 
 settings = Settings()

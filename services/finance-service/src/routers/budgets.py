@@ -3,13 +3,18 @@ from datetime import date, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth import get_current_user_id
 from src.database import get_db
 from src.models.budget import Budget, BudgetPeriod
 from src.models.expense import Expense
+
+
+def _normalize_category(category: str) -> str:
+    return category.strip().lower()
+
 
 router = APIRouter()
 
@@ -58,11 +63,11 @@ async def list_budgets(
         spent_result = await db.execute(
             select(Expense).where(
                 Expense.user_id == user_id,
-                Expense.category == b.category,
+                func.lower(Expense.category) == func.lower(b.category),
                 Expense.date >= from_date,
             )
         )
-        spent = float(sum(e.amount for e in spent_result.scalars().all()))
+        spent = float(sum(float(e.amount) for e in spent_result.scalars().all()))
         r = BudgetResponse.model_validate(b)
         r.spent = spent
         r.remaining = float(b.limit_amount) - spent
@@ -76,7 +81,12 @@ async def create_budget(
     user_id: uuid.UUID = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ) -> BudgetResponse:
-    budget = Budget(user_id=user_id, **body.model_dump())
+    budget = Budget(
+        user_id=user_id,
+        category=_normalize_category(body.category).title(),
+        limit_amount=body.limit_amount,
+        period=body.period,
+    )
     db.add(budget)
     await db.flush()
     r = BudgetResponse.model_validate(budget)
@@ -97,6 +107,8 @@ async def update_budget(
     if not budget:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Budget not found")
     for field, value in body.model_dump(exclude_none=True).items():
+        if field == "category":
+            value = _normalize_category(value).title()
         setattr(budget, field, value)
     await db.flush()
     return BudgetResponse.model_validate(budget)

@@ -6,7 +6,7 @@ from datetime import date as Date, datetime
 import httpx
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth import get_current_user_id
@@ -14,6 +14,10 @@ from src.config import settings
 from src.database import get_db
 from src.models.budget import Budget, BudgetPeriod
 from src.models.expense import Expense
+
+
+def _normalize_category(category: str) -> str:
+    return category.strip().lower()
 
 
 async def _notify(user_id: str, title: str, body: str) -> None:
@@ -25,6 +29,34 @@ async def _notify(user_id: str, title: str, body: str) -> None:
             )
     except Exception:
         pass
+
+
+async def _trigger_budget_automations(
+    user_id: uuid.UUID, budget: Budget, spent: float, category: str, pct: float
+) -> bool:
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.post(
+                f"{settings.automation_service_url}/workflows/trigger",
+                json={
+                    "user_id": str(user_id),
+                    "trigger_type": "budget_exceeded",
+                    "context": {
+                        "category": category,
+                        "spent": spent,
+                        "budget_limit": float(budget.limit_amount),
+                        "period": budget.period.value,
+                        "pct": round(pct, 1),
+                    },
+                },
+            )
+            if not response.is_success:
+                return False
+            data = response.json()
+            return bool(data.get("triggered"))
+    except Exception:
+        return False
+
 
 router = APIRouter()
 
@@ -233,15 +265,21 @@ async def create_expense(
     user_id: uuid.UUID = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ) -> ExpenseResponse:
-    expense = Expense(user_id=user_id, **body.model_dump())
+    normalized_category = _normalize_category(body.category)
+    expense = Expense(user_id=user_id, category=normalized_category.title(), **body.model_dump(exclude={"category"}))
     db.add(expense)
     await db.flush()
 
     # Check if any budget for this category is breached
     budget_result = await db.execute(
-        select(Budget).where(Budget.user_id == user_id, Budget.category == body.category)
+        select(Budget)
+        .where(
+            Budget.user_id == user_id,
+            func.lower(Budget.category) == normalized_category,
+        )
+        .order_by(Budget.created_at.desc())
     )
-    budget = budget_result.scalar_one_or_none()
+    budget = budget_result.scalars().first()
     if budget:
         today = Date.today()
         if budget.period == BudgetPeriod.monthly:
@@ -258,21 +296,25 @@ async def create_expense(
                 Expense.date >= from_date,
             )
         )
-        spent = float(sum(e.amount for e in spent_result.scalars().all()))
+        spent = float(sum(float(e.amount) for e in spent_result.scalars().all()))
         pct = spent / float(budget.limit_amount) * 100 if budget.limit_amount > 0 else 0
 
         if pct >= 100:
-            await _notify(
-                str(user_id),
-                f"🚨 Budget exceeded: {body.category}",
-                f"You've spent ₹{spent:.0f} against your ₹{budget.limit_amount:.0f} {budget.period} budget.",
-            )
+            automation_triggered = await _trigger_budget_automations(user_id, budget, spent, budget.category, pct)
+            if not automation_triggered:
+                await _notify(
+                    str(user_id),
+                    f"Budget exceeded: {budget.category}",
+                    f"You've spent ₹{spent:.0f} against your ₹{budget.limit_amount:.0f} {budget.period.value} budget.",
+                )
         elif pct >= 80:
-            await _notify(
-                str(user_id),
-                f"⚠️ Budget alert: {body.category} at {pct:.0f}%",
-                f"You've used {pct:.0f}% of your ₹{budget.limit_amount:.0f} {budget.period} budget.",
-            )
+            automation_triggered = await _trigger_budget_automations(user_id, budget, spent, budget.category, pct)
+            if not automation_triggered:
+                await _notify(
+                    str(user_id),
+                    f"Budget alert: {budget.category} at {pct:.0f}%",
+                    f"You've used {pct:.0f}% of your ₹{budget.limit_amount:.0f} {budget.period.value} budget.",
+                )
 
     return ExpenseResponse.model_validate(expense)
 

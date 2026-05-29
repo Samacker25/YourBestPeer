@@ -13,6 +13,25 @@ from src.models.notification import Notification, NotificationType
 router = APIRouter()
 
 
+def _normalize_notification_type(value: str | None) -> NotificationType:
+    if value is None:
+        return NotificationType.in_app
+    try:
+        return NotificationType(value)
+    except ValueError:
+        return NotificationType.in_app
+
+
+async def _persist_notification(
+    body,
+    db: AsyncSession,
+) -> Notification:
+    notif = Notification(**body.model_dump())
+    db.add(notif)
+    await db.flush()
+    return notif
+
+
 class NotificationCreate(BaseModel):
     user_id: uuid.UUID
     title: str
@@ -50,9 +69,23 @@ async def create_notification(
     body: NotificationCreate,
     db: AsyncSession = Depends(get_db),
 ) -> NotificationResponse:
-    notif = Notification(**body.model_dump())
-    db.add(notif)
-    await db.flush()
+    notif = await _persist_notification(body, db)
+    return NotificationResponse.model_validate(notif)
+
+
+@router.post("/send", response_model=NotificationResponse, status_code=status.HTTP_201_CREATED)
+async def send_notification(
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+) -> NotificationResponse:
+    notification_type = _normalize_notification_type(payload.get("type") or payload.get("channel"))
+    normalized = NotificationCreate(
+        user_id=payload["user_id"],
+        title=payload["title"],
+        body=payload["body"],
+        type=notification_type,
+    )
+    notif = await _persist_notification(normalized, db)
     return NotificationResponse.model_validate(notif)
 
 

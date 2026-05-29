@@ -28,6 +28,18 @@ class WorkflowPatch(BaseModel):
     is_active: bool
 
 
+class TriggerRequest(BaseModel):
+    user_id: uuid.UUID
+    trigger_type: str
+    context: dict = {}
+
+
+class TriggerResponse(BaseModel):
+    matched_rules: int
+    triggered: int
+    message: str
+
+
 class WorkflowOut(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID
@@ -76,6 +88,44 @@ async def create_workflow(
     await db.flush()
     await db.refresh(rule)
     return rule
+
+
+@router.post("/trigger", response_model=TriggerResponse)
+async def trigger_workflows(
+    body: TriggerRequest,
+    db: AsyncSession = Depends(get_db),
+) -> TriggerResponse:
+    result = await db.execute(
+        select(WorkflowRule)
+        .where(
+            WorkflowRule.user_id == body.user_id,
+            WorkflowRule.is_active == True,
+            WorkflowRule.trigger_type == body.trigger_type,
+        )
+    )
+    rules = result.scalars().all()
+
+    triggered = 0
+    for rule in rules:
+        rule_triggered, _ = await _execute_action(rule, str(body.user_id))
+        if rule_triggered:
+            triggered += 1
+        rule.run_count += 1
+        rule.last_run_at = datetime.now(timezone.utc)
+        await db.flush()
+
+    if not rules:
+        return TriggerResponse(
+            matched_rules=0,
+            triggered=0,
+            message="No active workflows matched this trigger",
+        )
+
+    return TriggerResponse(
+        matched_rules=len(rules),
+        triggered=triggered,
+        message=f"Executed {triggered} of {len(rules)} matching workflows",
+    )
 
 
 @router.patch("/{rule_id}", response_model=WorkflowOut)
