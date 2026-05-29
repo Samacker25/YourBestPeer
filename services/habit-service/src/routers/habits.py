@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.auth import get_current_user_id
 from src.config import settings
 from src.database import get_db
+from src.events import publish_habit_completed
 from src.models.habit import Habit, HabitFrequency
 from src.models.habit_log import HabitLog
 
@@ -213,6 +214,16 @@ async def log_habit(
             f"🔥 {streak}-day streak on \"{habit.name}\"!",
             f"You've completed \"{habit.name}\" for {streak} days in a row. Keep it up!",
         )
+
+    # Publish to Redis Stream — analytics, recommendation, and notification
+    # services each consume this event independently via their own consumer groups.
+    await publish_habit_completed(
+        user_id=str(user_id),
+        habit_id=str(habit_id),
+        habit_name=habit.name,
+        streak=streak,
+        xp_reward=habit.xp_reward,
+    )
 
     return {"message": "Logged!", "xp_earned": habit.xp_reward, "streak": streak}
 

@@ -1,9 +1,11 @@
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.config import settings
+from src.consumers import habit_events
 from src.database import Base, engine
 from src.models import Recommendation  # noqa: F401
 from src.routers import insights, recommendations
@@ -13,7 +15,9 @@ from src.routers import insights, recommendations
 async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    task = asyncio.create_task(habit_events.run())
     yield
+    task.cancel()
     await engine.dispose()
 
 

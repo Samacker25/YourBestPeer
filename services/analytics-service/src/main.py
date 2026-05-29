@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -7,13 +8,18 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
 from src.config import settings
+from src.consumers import habit_events
 from src.database import engine
 from src.routers import metrics
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # asyncio.create_task schedules the consumer loop as a background coroutine.
+    # It runs concurrently with FastAPI's request handling inside the same event loop.
+    task = asyncio.create_task(habit_events.run())
     yield
+    task.cancel()
     await engine.dispose()
 
 
